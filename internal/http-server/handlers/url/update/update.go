@@ -11,17 +11,16 @@ import (
 )
 
 type Request struct {
-	Alias string `json:"alias"`
 	URL   string `json:"url"`
+	Alias string `json:"alias"`
 }
 
 type Response struct {
 	response.Response
-	URL string `json:"url"`
 }
 
 type URLUpdater interface {
-	UpdateURL(alias string, url string) (string, error)
+	UpdateURL(newUrl string, alias string) error
 }
 
 func Updater(log *slog.Logger, urlUpdater URLUpdater) http.HandlerFunc {
@@ -56,14 +55,12 @@ func Updater(log *slog.Logger, urlUpdater URLUpdater) http.HandlerFunc {
 			return
 		}
 		url := req.URL
-		if alias == "" {
+		if url == "" {
 			log.Error("url is required", slog.String("path", r.URL.Path))
 			render.JSON(w, r, response.Error("url is required"))
 			return
 		}
-
-		url, err = urlUpdater.UpdateURL(alias, url)
-
+		err = urlUpdater.UpdateURL(url, alias)
 		if err != nil {
 			log.Error("failed to update url", sl.Err(err))
 			render.JSON(w, r, response.Error("failed to update url"))
@@ -71,7 +68,6 @@ func Updater(log *slog.Logger, urlUpdater URLUpdater) http.HandlerFunc {
 		}
 		render.JSON(w, r, Response{
 			Response: response.OK(),
-			URL:      url,
 		})
 	}
 }
