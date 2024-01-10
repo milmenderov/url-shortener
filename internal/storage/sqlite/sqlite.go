@@ -101,27 +101,26 @@ func (s *Storage) DeleteURL(alias string) error {
 	return nil
 }
 
-func (s *Storage) UpdateURL(alias string, url string) (string, error) {
-	//_, err := s.GetURL(alias)
-	//if err != nil {
-	//	return fmt.Errorf("%w: %s", err, alias)
-	//}
+func (s *Storage) UpdateURL(newUrl string, alias string) error {
 
 	const op = "storage.sqlite.UpdateURL"
+
 	stmt, err := s.db.Prepare("UPDATE url SET url = ? WHERE alias = ?")
 	if err != nil {
-		return "", fmt.Errorf("%s: prepare statement: %w", op, err)
+		return fmt.Errorf("%s: prepare statement: %w", op, err)
 	}
-	var resURL string
 
-	err = stmt.QueryRow(alias).Scan(&resURL)
+	res, err := stmt.Exec(newUrl, alias)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", storage.ErrURLNotFound
-		}
-
-		return "", fmt.Errorf("%s: execute statement: %w", op, err)
+		return fmt.Errorf("%s: execute statement: %w", op, err)
 	}
 
-	return resURL, nil
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: get rows affected %w", op, err)
+	}
+	if rowsAffected == 0 {
+		return storage.ErrURLNotFound
+	}
+	return nil
 }

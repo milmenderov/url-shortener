@@ -2,11 +2,13 @@ package save
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"log/slog"
 	"net/http"
+	"strings"
 	"url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
 	"url-shortener/internal/lib/random"
@@ -25,6 +27,7 @@ type Response struct {
 
 const aliasLength = 6
 
+//go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=URLSaver
 type URLSaver interface {
 	SaveURL(urlToSave string, alias string) (int64, error)
 }
@@ -49,7 +52,6 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			validateErr := err.(validator.ValidationErrors)
 			log.Error("invalid request", sl.Err(err))
 
-			render.JSON(w, r, response.Error("Invalid request"))
 			render.JSON(w, r, response.ValidationError(validateErr))
 
 			return
@@ -58,6 +60,13 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		if alias == "" {
 			alias = random.NewRandomString(aliasLength)
 		}
+		err = validateAlias(alias)
+		if err != nil {
+			log.Info("alias invalid character", slog.String("alias", req.Alias))
+			render.JSON(w, r, response.Error("alias invalid character"))
+			return
+		}
+
 		id, err := urlSaver.SaveURL(req.URL, alias)
 		if errors.Is(err, storage.ErrURLExists) {
 			log.Info("url already exist", slog.String("url", req.URL))
@@ -71,4 +80,16 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			Alias:    alias,
 		})
 	}
+}
+
+func validateAlias(alias string) error {
+	validChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" + "_"
+
+	for _, ch := range alias {
+		if !strings.ContainsRune(validChars, ch) {
+			return fmt.Errorf("invalid character: '%c'", ch)
+		}
+	}
+
+	return nil
 }
