@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  url-shortener:
+    build:
+      context: ../.
+      dockerfile: Dockerfile
+    image: urlshortener
+    container_name: urlshortener
+    ports:
+      - 8080:8080
+    environment:
+      - CONFIG_PATH=/app/config/config.yaml
+#    command: "sleep 1000"

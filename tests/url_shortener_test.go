@@ -28,7 +28,7 @@ func TestURLShortener_HappyPath(t *testing.T) {
 	e.POST("/url").
 		WithJSON(save.Request{
 			URL:   gofakeit.URL(),
-			Alias: random.NewRandomString(10),
+			Alias: random.NewRandomString(6),
 		}).
 		Expect().
 		Status(200).
@@ -103,6 +103,13 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 			// Redirect
 
 			testRedirect(t, alias, tc.url)
+
+			//reqDel := e.DELETE("/" + path.Join("url", alias)).
+			//	Expect().Status(http.StatusOK).
+			//	JSON().Object()
+			//
+			//reqDel.Value("status").String().IsEqual("OK")
+			//testRedirectNotFound(t, alias)
 		})
 	}
 }
