@@ -10,5 +10,24 @@ services:
     ports:
       - 8080:8080
     environment:
-      - CONFIG_PATH=/app/config/config.yaml
-#    command: "sleep 1000"
+      CONFIG_PATH: /app/config/config.yml
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_NAME: postgres
+      DB_PASSWORD: qwerty
+      APP_PORT: "8080"
+      volumes:
+        -./app/config/config.yml:/app/config/config.yml
+  db:
+    restart: always
+    image: postgres:15-alpine3.18
+    container_name: app_postgres
+#    volumes:
+#      - ./.database/postgres/data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=qwerty
+    ports:
+      - 5432:5432
+
+#  migration:

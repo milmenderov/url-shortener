@@ -4,22 +4,22 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 	"url-shortener/internal/storage"
 )
 
 type Storage struct {
-	db *sql.DB
+	Db *sql.DB
 }
 
 func New(storagePath string) (*Storage, error) {
 	const op = "storage.sqlite.New"
 
-	db, err := sql.Open("sqlite3", storagePath)
+	Db, err := sql.Open("sqlite3", storagePath)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	stmt, err := db.Prepare(`
+	stmt, err := Db.Prepare(`
 		CREATE TABLE IF NOT EXISTS url(
 		    id INTEGER PRIMARY KEY,
 		    alias TEXT NOT NULL UNIQUE,
@@ -33,22 +33,19 @@ func New(storagePath string) (*Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	return &Storage{db: db}, nil
+	return &Storage{Db: Db}, nil
 }
 
 func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
+	const op = "storage.postgres.SaveURL"
 
-	const op = "storage.sqlite.SaveURL"
-
-	stmt, err := s.db.Prepare("INSERT INTO url(url, alias) VALUES(?, ?)")
+	stmt, err := s.Db.Prepare("INSERT INTO url(url, alias) VALUES($1, $2)")
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 	res, err := stmt.Exec(urlToSave, alias)
 	if err != nil {
-		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-			return 0, fmt.Errorf("%s: %w", op, storage.ErrURLExists)
-		}
+
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -62,7 +59,7 @@ func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 func (s *Storage) GetURL(alias string) (string, error) {
 	const op = "storage.sqlite.GetURL"
 
-	stmt, err := s.db.Prepare("SELECT url FROM url WHERE alias = ?")
+	stmt, err := s.Db.Prepare("SELECT url FROM url WHERE alias = $1")
 	if err != nil {
 		return "", fmt.Errorf("%s: prepare statement: %w", op, err)
 	}
@@ -89,7 +86,7 @@ func (s *Storage) DeleteURL(alias string) error {
 
 	const op = "storage.sqlite.DeleteURL"
 
-	stmt, err := s.db.Prepare("DELETE FROM url WHERE alias = ?")
+	stmt, err := s.Db.Prepare("DELETE FROM url WHERE alias = $1")
 	if err != nil {
 		return fmt.Errorf("%s: prepare statement: %w", op, err)
 	}
@@ -105,7 +102,7 @@ func (s *Storage) UpdateURL(newUrl string, alias string) error {
 
 	const op = "storage.sqlite.UpdateURL"
 
-	stmt, err := s.db.Prepare("UPDATE url SET url = ? WHERE alias = ?")
+	stmt, err := s.Db.Prepare("UPDATE url SET url = $1 WHERE alias = $1")
 	if err != nil {
 		return fmt.Errorf("%s: prepare statement: %w", op, err)
 	}

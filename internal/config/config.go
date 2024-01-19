@@ -1,6 +1,8 @@
 package config
 
 import (
+	"database/sql"
+	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"os"
@@ -8,9 +10,14 @@ import (
 )
 
 type Config struct {
-	Env         string `yaml:"env" env-default:"local"`
-	StoragePath string `yaml:"storage_path" env-required:"true"`
-	HTTPServer  `yaml:"http_server"`
+	Env        string `yaml:"env" env-default:"local"`
+	Host       string
+	Port       string
+	Username   string
+	Password   string
+	DBName     string
+	SSLMode    string
+	HTTPServer `yaml:"http_server"`
 }
 
 type HTTPServer struct {
@@ -33,4 +40,19 @@ func MustLoad() *Config {
 		log.Fatalf("cannot read config file: %s", err)
 	}
 	return &cfg
+}
+
+func NewPostgresDB(cfg Config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
+		cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode))
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
