@@ -11,19 +11,23 @@ import (
 
 type Config struct {
 	Env        string `yaml:"env" env-default:"local"`
-	Host       string
-	Port       string
-	Username   string
-	Password   string
-	DBName     string
-	SSLMode    string
 	HTTPServer `yaml:"http_server"`
+	DataBase   `yaml:"db"`
 }
 
 type HTTPServer struct {
 	Address     string        `yaml:"address" env-default:"localhost:8080"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+}
+
+type DataBase struct {
+	Host     string `yaml:"host" env-default:"db"`
+	Port     string `yaml:"port" env-default:"5432"`
+	Username string `yaml:"username" env-default:"postgres"`
+	Password string `yaml:"password" env-default:"qwerty"`
+	DBName   string `yaml:"dbname" env-default:"postgres"`
+	SSLMode  string `yaml:"sslmode" env-default:"disable"`
 }
 
 func MustLoad() *Config {
@@ -42,9 +46,9 @@ func MustLoad() *Config {
 	return &cfg
 }
 
-func NewPostgresDB(cfg Config) (*sql.DB, error) {
+func NewPostgresDB(cfg *Config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode))
+		cfg.DataBase.Host, cfg.DataBase.Port, cfg.DataBase.Username, cfg.DataBase.DBName, cfg.DataBase.Password, cfg.DataBase.SSLMode))
 	if err != nil {
 		return nil, err
 	}
