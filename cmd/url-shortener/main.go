@@ -30,18 +30,12 @@ func main() {
 	log.Info("Starting url-shortener", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
 
-	db, err := config.NewPostgresDB(config.Config{
-		Host:     os.Getenv("DB_HOST"),
-		Port:     os.Getenv("DB_PORT"),
-		Username: os.Getenv("DB_USER"),
-		DBName:   os.Getenv("DB_NAME"),
-		SSLMode:  os.Getenv("DB_SSLMODE"),
-		Password: os.Getenv("DB_PASSWORD"),
-	})
+	db, err := config.NewPostgresDB(cfg)
 	if err != nil {
 		log.Error("Failed to init storage", sl.Err(err))
 		os.Exit(1)
 	}
+
 	storage := &sqlite.Storage{Db: db}
 
 	router := chi.NewRouter()

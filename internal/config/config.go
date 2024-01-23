@@ -11,13 +11,16 @@ import (
 
 type Config struct {
 	Env        string `yaml:"env" env-default:"local"`
-	Host       string
-	Port       string
-	Username   string
-	Password   string
-	DBName     string
-	SSLMode    string
 	HTTPServer `yaml:"http_server"`
+	DbConfig   `yaml:"db"`
+}
+type DbConfig struct {
+	Host     string `yaml:"host" env-default:"db"`
+	Port     string `yaml:"port" env-default:"5432"`
+	Username string `yaml:"username" env-default:"postgres"`
+	Password string `yaml:"password" env-default:"qwerty"`
+	DBName   string `yaml:"dbname" env-default:"postgres"`
+	SSLMode  string `yaml:"sslmode" env-default:"disable"`
 }
 
 type HTTPServer struct {
@@ -42,9 +45,9 @@ func MustLoad() *Config {
 	return &cfg
 }
 
-func NewPostgresDB(cfg Config) (*sql.DB, error) {
+func NewPostgresDB(cfg *Config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.Username, cfg.DBName, cfg.Password, cfg.SSLMode))
+		cfg.DbConfig.Host, cfg.DbConfig.Port, cfg.DbConfig.Username, cfg.DbConfig.DBName, cfg.DbConfig.Password, cfg.DbConfig.SSLMode))
 	if err != nil {
 		return nil, err
 	}

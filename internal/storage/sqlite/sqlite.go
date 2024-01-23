@@ -12,31 +12,8 @@ type Storage struct {
 	Db *sql.DB
 }
 
-func New(storagePath string) (*Storage, error) {
-	const op = "storage.sqlite.New"
-
-	Db, err := sql.Open("sqlite3", storagePath)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	stmt, err := Db.Prepare(`
-		CREATE TABLE IF NOT EXISTS url(
-		    id INTEGER PRIMARY KEY,
-		    alias TEXT NOT NULL UNIQUE,
-		    url TEXT NOT NULL);
-	CREATE INDEX IF NOT EXISTS idx_alias ON url(alias);
-		`)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	_, err = stmt.Exec()
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	return &Storage{Db: Db}, nil
-}
-
 func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
+
 	const op = "storage.postgres.SaveURL"
 
 	stmt, err := s.Db.Prepare("INSERT INTO url(url, alias) VALUES($1, $2)")
@@ -57,7 +34,7 @@ func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
 }
 
 func (s *Storage) GetURL(alias string) (string, error) {
-	const op = "storage.sqlite.GetURL"
+	const op = "storage.postgres.GetURL"
 
 	stmt, err := s.Db.Prepare("SELECT url FROM url WHERE alias = $1")
 	if err != nil {
@@ -81,10 +58,10 @@ func (s *Storage) GetURL(alias string) (string, error) {
 func (s *Storage) DeleteURL(alias string) error {
 	_, err := s.GetURL(alias)
 	if err != nil {
-		return fmt.Errorf("%w: %s", err, alias)
+		return fmt.Errorf("Alias not found %w: %s", err, alias)
 	}
 
-	const op = "storage.sqlite.DeleteURL"
+	const op = "storage.postgres.DeleteURL"
 
 	stmt, err := s.Db.Prepare("DELETE FROM url WHERE alias = $1")
 	if err != nil {
@@ -100,9 +77,9 @@ func (s *Storage) DeleteURL(alias string) error {
 
 func (s *Storage) UpdateURL(newUrl string, alias string) error {
 
-	const op = "storage.sqlite.UpdateURL"
+	const op = "storage.postgres.UpdateURL"
 
-	stmt, err := s.Db.Prepare("UPDATE url SET url = $1 WHERE alias = $1")
+	stmt, err := s.Db.Prepare("UPDATE url SET url = $1 WHERE alias = $2")
 	if err != nil {
 		return fmt.Errorf("%s: prepare statement: %w", op, err)
 	}
