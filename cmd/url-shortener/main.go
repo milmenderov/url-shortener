@@ -30,11 +30,14 @@ func main() {
 	log.Info("Starting url-shortener", slog.String("env", cfg.Env))
 	log.Debug("debug messages are enabled")
 
-	storage, err := sqlite.New(cfg.StoragePath)
+	db, err := config.NewPostgresDB(cfg)
 	if err != nil {
 		log.Error("Failed to init storage", sl.Err(err))
 		os.Exit(1)
 	}
+
+	storage := &sqlite.Storage{Db: db}
+
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
