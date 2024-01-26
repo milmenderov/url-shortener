@@ -1,7 +1,6 @@
 package save
 
 import (
-	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -12,7 +11,6 @@ import (
 	"url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
 	"url-shortener/internal/lib/random"
-	"url-shortener/internal/storage"
 )
 
 type Request struct {
@@ -29,7 +27,7 @@ const aliasLength = 6
 
 //go:generate go run github.com/vektra/mockery/v2@v2.28.2 --name=URLSaver
 type URLSaver interface {
-	SaveURL(urlToSave string, alias string) (int64, error)
+	SaveURL(urlToSave string, alias string) error
 }
 
 func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
@@ -67,14 +65,13 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			return
 		}
 
-		id, err := urlSaver.SaveURL(req.URL, alias)
+		err = urlSaver.SaveURL(req.URL, alias)
 
-		if errors.Is(err, storage.ErrURLExists) {
+		if err != nil {
 			log.Info("url already exist", slog.String("url", req.URL))
-			render.JSON(w, r, response.Error("url already exist"))
+			render.JSON(w, r, response.Error("failed to save url"))
 			return
 		}
-		log.Info("url added", slog.Int64("id", id))
 
 		render.JSON(w, r, Response{
 			Response: response.OK(),
