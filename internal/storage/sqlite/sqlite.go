@@ -12,25 +12,32 @@ type Storage struct {
 	Db *sql.DB
 }
 
-func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
+func (s *Storage) SaveURL(urlToSave string, alias string) error {
+	_, err := s.GetURL(alias)
+	if err == nil {
+		return fmt.Errorf("Alias already exist %w: %s", err, alias)
 
+	}
 	const op = "storage.postgres.SaveURL"
 
 	stmt, err := s.Db.Prepare("INSERT INTO url(url, alias) VALUES($1, $2)")
 	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	res, err := stmt.Exec(urlToSave, alias)
 	if err != nil {
 
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: get rows affected %w", op, err)
+	}
+	if rowsAffected == 0 {
+		return storage.ErrURLNotFound
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("%s: failed to get last insert id: %w", op, err)
-	}
-	return id, nil
+	return nil
 }
 
 func (s *Storage) GetURL(alias string) (string, error) {
