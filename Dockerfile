@@ -10,7 +10,7 @@ COPY . .
 RUN go build -a -installsuffix cgo -o urlshortener ./cmd/url-shortener/main.go
 
 
-FROM golang:1.21.5-alpine3.19
+FROM scratch
 WORKDIR /app
 
 COPY --from=builder /app/config /app/config

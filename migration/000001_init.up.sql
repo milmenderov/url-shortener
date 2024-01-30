@@ -3,3 +3,4 @@ CREATE TABLE IF NOT EXISTS url(
     alias TEXT NOT NULL UNIQUE,
     url   TEXT NOT NULL);
 
+

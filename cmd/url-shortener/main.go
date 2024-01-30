@@ -15,7 +15,7 @@ import (
 	mwLogger "url-shortener/internal/http-server/middleware/logger"
 	"url-shortener/internal/lib/logger/handlers/slogpretty"
 	"url-shortener/internal/lib/logger/sl"
-	"url-shortener/internal/storage/sqlite"
+	"url-shortener/internal/storage/postgres"
 )
 
 const (
@@ -36,7 +36,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	storage := &sqlite.Storage{Db: db}
+	storage := &postgres.Storage{Db: db}
 
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
